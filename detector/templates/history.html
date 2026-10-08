@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan History | TruthLens</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root{
+            /* ===== Token system: "Verification Lab" ===== */
+            --void:        #0a1512;
+            --void-deep:    #071009;
+            --panel:       #10201b;
+            --panel-soft:  #142720;
+            --line:        rgba(201,169,97,0.16);
+            --line-bright: rgba(201,169,97,0.34);
+            --ink:         #eef1ea;
+            --ink-soft:    #90a49b;
+            --ink-faint:   #5f7168;
+            --gold:        #c9a961;
+            --gold-bright: #e8c988;
+            --verified:    #3ddc97;
+            --flagged:     #ff5c72;
+            --review:      #ffb238;
+        }
+
+        *{ box-sizing:border-box; }
+
+        @media (prefers-reduced-motion: reduce){
+            *,*::before,*::after{
+                animation-duration:0.001ms !important;
+                animation-iteration-count:1 !important;
+                transition-duration:0.001ms !important;
+                scroll-behavior:auto !important;
+            }
+        }
+
+        html{ scroll-behavior:smooth; }
+
+        body{
+            margin:0;
+            min-height:100vh;
+            font-family:'Inter', sans-serif;
+            color:var(--ink);
+            background:
+                radial-gradient(circle at 18% -8%, rgba(201,169,97,0.10), transparent 42%),
+                radial-gradient(circle at 88% 12%, rgba(61,220,151,0.06), transparent 40%),
+                linear-gradient(180deg, var(--void-deep) 0%, var(--void) 100%);
+            background-attachment:fixed;
+            position:relative;
+        }
+
+        body::before{
+            content:'';
+            position:fixed; inset:0;
+            background-image:
+                linear-gradient(rgba(201,169,97,0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(201,169,97,0.035) 1px, transparent 1px);
+            background-size:42px 42px;
+            mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, black, transparent 75%);
+            pointer-events:none;
+            z-index:0;
+        }
+
+        .mono{ font-family:'JetBrains Mono', monospace; }
+        .serif{ font-family:'Fraunces', serif; }
+
+        /* ---------- Header ---------- */
+        .main-header{
+            position:relative;
+            z-index:2;
+            padding:26px 24px 22px;
+            border-bottom:1px solid var(--line);
+        }
+
+        .header-inner{
+            max-width:1000px;
+            margin:0 auto;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            flex-wrap:wrap;
+            gap:10px;
+        }
+
+        .header-brand{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            text-decoration:none;
+            color:var(--ink);
+        }
+
+        .brand-mark{
+            width:38px; height:38px;
+            border-radius:50%;
+            display:grid; place-items:center;
+            background:conic-gradient(from 180deg, var(--gold), transparent 65%, var(--gold));
+            padding:1px;
+        }
+        .brand-mark span{
+            width:100%; height:100%;
+            border-radius:50%;
+            background:var(--void-deep);
+            display:grid; place-items:center;
+            color:var(--gold-bright);
+            font-size:15px;
+        }
+
+        .brand-word{
+            font-family:'Fraunces', serif;
+            font-weight:600;
+            font-size:22px;
+            letter-spacing:0.2px;
+        }
+        .brand-word em{ font-style:normal; color:var(--gold-bright); }
+
+        .header-tag{
+            font-family:'JetBrains Mono', monospace;
+            font-size:11px;
+            letter-spacing:2px;
+            text-transform:uppercase;
+            color:var(--ink-faint);
+            border:1px solid var(--line);
+            padding:6px 12px;
+            border-radius:999px;
+        }
+        .header-tag i{ color:var(--gold); margin-right:6px; }
+
+        .header-auth{ display:flex; align-items:center; gap:12px; }
+
+        .user-chip{
+            color:var(--gold-bright);
+            border-color:var(--line-bright);
+            background:rgba(201,169,97,0.08);
+        }
+        .user-chip i{ color:var(--gold-bright); }
+
+        .btn-logout{
+            appearance:none;
+            font:inherit;
+            font-family:'JetBrains Mono', monospace;
+            cursor:pointer;
+            background:none;
+            border-color:rgba(255,92,114,0.35);
+            color:var(--flagged);
+            transition:background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+        }
+        .btn-logout:hover{ background:rgba(255,92,114,0.12); border-color:var(--flagged); }
+        .btn-logout:focus-visible{ outline:3px solid var(--flagged); outline-offset:2px; }
+        .btn-logout:active{ transform:translateY(1px); }
+        .logout-form{ display:inline-flex; }
+
+        .wrap{
+            position:relative;
+            z-index:2;
+            max-width:1000px;
+            margin:0 auto;
+            padding:56px 20px 80px;
+        }
+
+        /* ---------- Intro ---------- */
+        .intro{
+            margin-bottom:30px;
+            display:flex;
+            align-items:flex-end;
+            justify-content:space-between;
+            flex-wrap:wrap;
+            gap:18px;
+            animation:riseIn 0.7s cubic-bezier(.2,.8,.2,1) both;
+        }
+        .intro-eyebrow{
+            font-family:'JetBrains Mono', monospace;
+            font-size:11px;
+            letter-spacing:3px;
+            text-transform:uppercase;
+            color:var(--gold);
+            display:flex; align-items:center; gap:10px;
+            margin-bottom:14px;
+        }
+        .intro-eyebrow::before{
+            content:'';
+            width:26px; height:1px;
+            background:var(--gold);
+        }
+        .intro h1{
+            font-family:'Fraunces', serif;
+            font-weight:600;
+            font-size:clamp(26px, 4vw, 36px);
+            line-height:1.15;
+            margin:0;
+        }
+
+        .btn-back{
+            display:inline-flex;
+            align-items:center;
+            gap:9px;
+            text-decoration:none;
+            font-family:'JetBrains Mono', monospace;
+            font-size:12px;
+            letter-spacing:1px;
+            text-transform:uppercase;
+            color:var(--void-deep);
+            background:var(--gold);
+            border:1px solid var(--gold);
+            border-radius:999px;
+            padding:11px 18px;
+            font-weight:600;
+            transition:background 0.2s, border-color 0.2s, transform 0.15s;
+        }
+        .btn-back:hover{ background:var(--gold-bright); border-color:var(--gold-bright); transform:translateY(-1px); }
+        .btn-back:focus-visible{ outline:3px solid var(--gold-bright); outline-offset:2px; }
+
+        /* ---------- Archive card ---------- */
+        .archive-card{
+            position:relative;
+            background:linear-gradient(180deg, var(--panel-soft), var(--panel));
+            border:1px solid var(--line);
+            border-radius:18px;
+            padding:8px;
+            box-shadow:0 30px 60px -35px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.03);
+            animation:riseIn 0.7s 0.08s cubic-bezier(.2,.8,.2,1) both;
+            overflow:hidden;
+        }
+
+        .card-label{
+            display:flex;
+            align-items:center;
+            gap:8px;
+            font-family:'JetBrains Mono', monospace;
+            font-size:11px;
+            letter-spacing:1.8px;
+            text-transform:uppercase;
+            color:var(--ink-faint);
+            padding:22px 26px 6px;
+        }
+        .card-label .dot{
+            width:6px; height:6px; border-radius:50%;
+            background:var(--gold);
+            box-shadow:0 0 8px var(--gold);
+        }
+
+        /* ---------- Table ---------- */
+        .table-scroll{ overflow-x:auto; }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+            min-width:640px;
+        }
+
+        thead th{
+            text-align:left;
+            font-family:'JetBrains Mono', monospace;
+            font-size:11px;
+            letter-spacing:1.4px;
+            text-transform:uppercase;
+            color:var(--ink-faint);
+            padding:16px 26px;
+            border-bottom:1px solid var(--line);
+            white-space:nowrap;
+        }
+
+        tbody tr{
+            border-bottom:1px solid var(--line);
+            opacity:0;
+            animation:itemIn 0.5s ease forwards;
+            transition:background 0.2s;
+        }
+        tbody tr:hover{ background:rgba(201,169,97,0.05); }
+        tbody tr:last-child{ border-bottom:none; }
+        tbody tr:nth-child(1){ animation-delay:0.04s; }
+        tbody tr:nth-child(2){ animation-delay:0.09s; }
+        tbody tr:nth-child(3){ animation-delay:0.14s; }
+        tbody tr:nth-child(4){ animation-delay:0.19s; }
+        tbody tr:nth-child(5){ animation-delay:0.24s; }
+        tbody tr:nth-child(6){ animation-delay:0.29s; }
+        tbody tr:nth-child(7){ animation-delay:0.34s; }
+        tbody tr:nth-child(8){ animation-delay:0.39s; }
+
+        @keyframes itemIn{
+            0%{ opacity:0; transform:translateY(8px); }
+            100%{ opacity:1; transform:translateY(0); }
+        }
+
+        td{
+            padding:18px 26px;
+            font-size:14px;
+            color:var(--ink);
+            vertical-align:middle;
+        }
+
+        .cell-date{
+            font-family:'JetBrains Mono', monospace;
+            font-size:12.5px;
+            color:var(--ink-soft);
+            white-space:nowrap;
+        }
+
+        .cell-text{
+            color:var(--ink-soft);
+            line-height:1.5;
+            max-width:340px;
+        }
+
+        .verdict-pill{
+            display:inline-flex;
+            align-items:center;
+            gap:7px;
+            font-family:'JetBrains Mono', monospace;
+            font-size:11px;
+            font-weight:600;
+            letter-spacing:0.6px;
+            text-transform:uppercase;
+            padding:7px 13px;
+            border-radius:999px;
+            white-space:nowrap;
+        }
+        .verdict-pill::before{
+            content:'';
+            width:7px; height:7px;
+            border-radius:50%;
+            background:currentColor;
+            box-shadow:0 0 8px currentColor;
+        }
+        .pill-verified{ color:var(--verified); background:rgba(61,220,151,0.10); border:1px solid rgba(61,220,151,0.3); }
+        .pill-flagged{ color:var(--flagged); background:rgba(255,92,114,0.10); border:1px solid rgba(255,92,114,0.3); }
+        .pill-review{ color:var(--review); background:rgba(255,178,56,0.10); border:1px solid rgba(255,178,56,0.3); }
+
+        .cell-confidence{
+            font-family:'JetBrains Mono', monospace;
+            font-size:13.5px;
+            color:var(--gold-bright);
+            font-weight:600;
+            white-space:nowrap;
+        }
+
+        /* ---------- Empty state ---------- */
+        .empty-row td{
+            padding:60px 26px;
+            text-align:center;
+        }
+        .empty-state{ color:var(--ink-faint); }
+        .empty-state i{ font-size:26px; opacity:0.5; margin-bottom:12px; display:block; }
+        .empty-state p{
+            font-family:'JetBrains Mono', monospace;
+            font-size:12.5px;
+            margin:0 0 16px;
+            letter-spacing:0.4px;
+        }
+        .empty-state .btn-back{ display:inline-flex; }
+
+        @keyframes riseIn{
+            0%{ opacity:0; transform:translateY(14px); }
+            100%{ opacity:1; transform:translateY(0); }
+        }
+
+        @media (max-width:680px){
+            .header-inner{ flex-direction:column; align-items:flex-start; }
+            .header-auth{ width:100%; justify-content:flex-end; }
+            .intro{ flex-direction:column; align-items:flex-start; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="header-inner">
+            <a href="/" class="header-brand">
+                <span class="brand-mark"><span><i class="fa-solid fa-magnifying-glass"></i></span></span>
+                <span class="brand-word">Truth<em>Lens</em></span>
+            </a>
+
+            <div class="header-auth">
+                <span class="header-tag mono"><i class="fa-solid fa-clock-rotate-left"></i>Case archive</span>
+
+                {% if user.is_authenticated %}
+                    <span class="header-tag mono user-chip">
+                        <i class="fa-solid fa-user"></i>{{ user.username }}
+                    </span>
+                    <form action="{% url 'logout' %}" method="post" class="logout-form">
+                        {% csrf_token %}
+                        <button type="submit" class="header-tag mono btn-logout">
+                            <i class="fa-solid fa-arrow-right-from-bracket"></i>Logout
+                        </button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}" class="header-tag mono btn-login">
+                        <i class="fa-solid fa-right-to-bracket"></i>Login
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <div class="wrap">
+
+        <div class="intro">
+            <div>
+                <span class="intro-eyebrow">Case log</span>
+                <h1>My scan history</h1>
+            </div>
+            <a href="/" class="btn-back"><i class="fa-solid fa-arrow-left"></i>Back to scanner</a>
+        </div>
+
+        <div class="archive-card">
+            <span class="card-label"><span class="dot"></span>Exhibit log — every case you've submitted</span>
+
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Scanned text</th>
+                            <th>Result</th>
+                            <th>Confidence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for scan in scans %}
+                        {% with label=scan.result_label|lower %}
+                        <tr>
+                            <td class="cell-date">{{ scan.created_at|date:"M d, Y" }}</td>
+                            <td class="cell-text">{{ scan.scanned_text|truncatechars:50 }}</td>
+                            <td>
+                                <span class="verdict-pill
+                                    {% if 'real' in label or 'verified' in label or 'true' in label %}pill-verified
+                                    {% elif 'fake' in label or 'false' in label or 'flagged' in label %}pill-flagged
+                                    {% else %}pill-review{% endif %}">
+                                    {{ scan.result_label }}
+                                </span>
+                            </td>
+                            <td class="cell-confidence">{{ scan.confidence_score }}%</td>
+                        </tr>
+                        {% endwith %}
+                        {% empty %}
+                        <tr class="empty-row">
+                            <td colspan="4">
+                                <div class="empty-state">
+                                    <i class="fa-regular fa-folder-open"></i>
+                                    <p>No scans found yet — start your first case.</p>
+                                    <a href="/" class="btn-back"><i class="fa-solid fa-stamp"></i>Run an analysis</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

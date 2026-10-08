@@ -1,0 +1,10 @@
+django>=5.2,<5.3
+pandas
+scikit-learn>=1.9,<1.10
+scipy
+requests
+feedparser
+PyPDF2
+python-docx
+transformers
+torch

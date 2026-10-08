@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TruthLens | Verification Lab</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root{
+            /* ===== Token system: "Verification Lab" ===== */
+            --void:        #0a1512;
+            --void-deep:    #071009;
+            --panel:       #10201b;
+            --panel-soft:  #142720;
+            --line:        rgba(201,169,97,0.16);
+            --line-bright: rgba(201,169,97,0.34);
+            --ink:         #eef1ea;
+            --ink-soft:    #90a49b;
+            --ink-faint:   #5f7168;
+            --gold:        #c9a961;
+            --gold-bright: #e8c988;
+            --verified:    #3ddc97;
+            --flagged:     #ff5c72;
+            --review:      #ffb238;
+        }
+
+        *{ box-sizing:border-box; }
+
+        @media (prefers-reduced-motion: reduce){
+            *,*::before,*::after{
+                animation-duration:0.001ms !important;
+                animation-iteration-count:1 !important;
+                transition-duration:0.001ms !important;
+                scroll-behavior:auto !important;
+            }
+        }
+
+        html{ scroll-behavior:smooth; }
+
+        body{
+            margin:0;
+            min-height:100vh;
+            font-family:'Inter', sans-serif;
+            color:var(--ink);
+            background:
+                radial-gradient(circle at 18% -8%, rgba(201,169,97,0.10), transparent 42%),
+                radial-gradient(circle at 88% 12%, rgba(61,220,151,0.06), transparent 40%),
+                linear-gradient(180deg, var(--void-deep) 0%, var(--void) 100%);
+            background-attachment:fixed;
+            position:relative;
+        }
+
+        /* faint instrumentation grid */
+        body::before{
+            content:'';
+            position:fixed; inset:0;
+            background-image:
+                linear-gradient(rgba(201,169,97,0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(201,169,97,0.035) 1px, transparent 1px);
+            background-size:42px 42px;
+            mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, black, transparent 75%);
+            pointer-events:none;
+            z-index:0;
+        }
+
+        .mono{ font-family:'JetBrains Mono', monospace; }
+        .serif{ font-family:'Fraunces', serif; }
+
+        /* ---------- Header ---------- */
+        .main-header{
+            position:relative;
+            z-index:2;
+            padding:26px 24px 22px;
+            border-bottom:1px solid var(--line);
+        }
+
+        .header-inner{
+            max-width:920px;
+            margin:0 auto;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            flex-wrap:wrap;
+            gap:10px;
+        }
+
+        .header-brand{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            text-decoration:none;
+            color:var(--ink);
+        }
+
+        .brand-mark{
+            width:38px; height:38px;
+            border-radius:50%;
+            display:grid; place-items:center;
+            background:conic-gradient(from 180deg, var(--gold), transparent 65%, var(--gold));
+            padding:1px;
+        }
+        .brand-mark span{
+            width:100%; height:100%;
+            border-radius:50%;
+            background:var(--void-deep);
+            display:grid; place-items:center;
+            color:var(--gold-bright);
+            font-size:15px;
+        }
+
+        .brand-word{
+            font-family:'Fraunces', serif;
+            font-weight:600;
+            font-size:22px;
+            letter-spacing:0.2px;
+        }
+        .brand-word em{ font-style:normal; color:var(--gold-bright); }
+
+        .header-tag{
+            font-family:'JetBrains Mono', monospace;
+            font-size:11px;
+            letter-spacing:2px;
+            text-transform:uppercase;
+            color:var(--ink-faint);
+            border:1px solid var(--line);
+            padding:6px 12px;
+            border-radius:999px;
+        }
+        .header-tag i{ color:var(--gold); margin-right:6px; }
+
+        /* ---------- Auth cluster ---------- */
+        .header-auth{
+            display:flex;
+            align-items:center;
+            gap:12px;
+        }
+
+        .user-chip{
+            color:var(--gold-bright);
+            border-color:var(--line-bright);
+            background:rgba(201,169,97,0.08);
+        }
+        .user-chip i{ color:var(--gold-bright); }
+
+        .btn-login,
+        .btn-history,
+        .btn-logout{
+            appearance:none;
+            font:inherit;
+            font-family:'JetBrains Mono', monospace;
+            cursor:pointer;
+            text-decoration:none;
+            transition:background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+        }
+
+        .btn-login{
+            text-decoration:none;
+            color:var(--void-deep);
+            background:var(--gold);
+            border-color:var(--gold);
+            font-weight:600;
+        }
+        .btn-login:hover{ background:var(--gold-bright); border-color:var(--gold-bright); transform:translateY(-1px); }
+        .btn-login:focus-visible{ outline:3px solid var(--gold-bright); outline-offset:2px; }
+
+        .btn-history{
+            color:var(--ink-soft);
+            border-color:var(--line-bright);
+            background:rgba(201,169,97,0.04);
+        }
+        .btn-history i{ color:var(--gold); }
+        .btn-history:hover{
+            color:var(--gold-bright);
+            border-color:var(--gold);
+            background:rgba(201,169,97,0.1);
+            transform:translateY(-1px);
+        }
+        .btn-history:focus-visible{ outline:3px solid var(--gold-bright); outline-offset:2px; }
+
+        .btn-logout{
+            background:none;
+            border-color:rgba(255,92,114,0.35);
+            color:var(--flagged);
+        }
+        .btn-logout:hover{ background:rgba(255,92,114,0.12); border-color:var(--flagged); }
+        .btn-logout:focus-visible{ outline:3px solid var(--flagged); outline-offset:2px; }
+        .btn-logout:active{ transform:translateY(1px); }
+
+        .logout-form{ display:inline-flex; }
+
+        .wrap{
+            position:relative;
+            z-index:2;
+            max-width:920px;
+            margin:0 auto;
+            padding:56px 20px 80px;
+        }
+
+        /* ---------- Intro ---------- */
+        .intro{
+            margin-bottom:36px;
+            animation:riseIn 0.7s cubic-bezier(.2,.8,.2,1) both;
+        }
+        .intro-eyebrow{
+            font-family:'JetBrains Mono', monospace;
+            font-size:11px;
+            letter-spacing:3px;
+            text-transform:uppercase;
+            color:var(--gold);
+            display:flex; align-items:center; gap:10px;
+            margin-bottom:14px;
+        }
+        .intro-eyebrow::before{
+            content:'';
+            width:26px; height:1px;
+            background:var(--gold);
+        }
+        .intro h1{
+            font-family:'Fraunces', serif;
+            font-weight:600;
+            font-size:clamp(28px, 4vw, 40px);
+            line-height:1.15;
+            margin:0 0 14px;
+            max-width:18ch;
+        }
+        .intro p{
+            color:var(--ink-soft);
+            font-size:15.5px;
+            line-height:1.65;
+            max-width:56ch;
+            margin:0;
+        }
+
+        /* ---------- Submission card ---------- */
+        .dossier-card{
+            position:relative;
+            background:linear-gradient(180deg, var(--panel-soft), var(--panel));
+            border:1px solid var(--line);
+            border-radius:18px;
+            padding:34px;
+            margin-bottom:34px;
+            box-shadow:0 30px 60px -35px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.03);
+            animation:riseIn 0.7s 0.08s cubic-bezier(.2,.8,.2,1) both;
+            overflow:hidden;
+        }
+
+        .card-label{
+            display:inline-flex;
+            align-items:center;
+            gap:8px;
+            font-family:'JetBrains Mono', monospace;
+            font-size:11px;
+            letter-spacing:1.8px;
+            text-transform:uppercase;
+            color:var(--ink-faint);
+            margin-bottom:18px;
+        }
+        .card-label .dot{
+            width:6px; height:6px; border-radius:50%;
+            background:var(--gold);
+            box-shadow:0 0 8px var(--gold);
+        }
+
+        textarea{
+            width:100%;
+            font-family:'Inter', sans-serif;
+            font-size:15px;
+            line-height:1.65;
+            padding:18px 20px;
+            background:rgba(7,16,9,0.55);
+            border:1px solid var(--line);
+            border-radius:12px;
+            color:var(--ink);
+            resize:vertical;
+            outline:none;
+            transition:border-color 0.25s, box-shadow 0.25s, background 0.25s;
+        }
+        textarea::placeholder{ color:var(--ink-faint); }
+        textarea:focus{
+            border-color:var(--gold);
+            background:rgba(7,16,9,0.75);
+            box-shadow:0 0 0 4px rgba(201,169,97,0.12);
+        }
+
+        /* scanning line sweep, only while the field has focus */
+        .scan-field{ position:relative; border-radius:12px; }
+        .scan-field::after{
+            content:'';
+            position:absolute; left:0; right:0; top:0;
+            height:2px;
+            background:linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+            opacity:0;
+            transition:opacity 0.3s;
+            pointer-events:none;
+        }
+        .scan-field:focus-within::after{
+            opacity:1;
+            animation:scanSweep 2.2s linear infinite;
+        }
+        @keyframes scanSweep{
+            0%{ top:0; }
+            100%{ top:100%; }
+        }
+
+        .or-divider{
+            display:flex; align-items:center; gap:16px;
+            margin:26px 0;
+        }
+        .or-divider::before, .or-divider::after{
+            content:''; flex:1; border-top:1px dashed var(--line);
+        }
+        .or-divider span{
+            font-family:'JetBrains Mono', monospace;
+            font-size:10.5px; letter-spacing:2.5px;
+            color:var(--ink-faint);
+        }
+
+        .upload-field{ margin-bottom:6px; }
+        .upload-label{
+            font-family:'JetBrains Mono', monospace;
+            font-size:11px; letter-spacing:1.2px; text-transform:uppercase;
+            color:var(--ink-faint);
+            display:block; margin-bottom:10px;
+        }
+        .upload-label i{ color:var(--gold); margin-right:6px; }
+
+        input[type="file"]{
+            width:100%;
+            font-family:'JetBrains Mono', monospace;
+            font-size:12.5px;
+            padding:14px 16px;
+            background:rgba(7,16,9,0.4);
+            border:1.5px dashed var(--line-bright);
+            border-radius:12px;
+            color:var(--ink-soft);
+            outline:none;
+            transition:border-color 0.25s, background 0.25s;
+        }
+        input[type="file"]:hover{ border-color:var(--gold); background:rgba(201,169,97,0.05); }
+        input[type="file"]:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+        input[type="file"]::file-selector-button{
+            font-family:'JetBrains Mono', monospace;
+            font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:0.5px;
+            background:var(--gold);
+            color:var(--void-deep);
+            border:none; border-radius:8px;
+            padding:9px 14px;
+            margin-right:14px;
+            cursor:pointer;
+            transition:background 0.2s, transform 0.15s;
+        }
+        input[type="file"]::file-selector-button:hover{ background:var(--gold-bright); }
+
+        /* ---------- Analyze button ---------- */
+        .btn-analyze{
+            position:relative;
+            overflow:hidden;
+            font-family:'JetBrains Mono', monospace;
+            font-weight:600;
+            letter-spacing:1px;
+            background:linear-gradient(180deg, var(--gold-bright), var(--gold));
+            border:none;
+            border-radius:12px;
+            color:var(--void-deep);
+            padding:16px 22px;
+            width:100%;
+            margin-top:22px;
+            cursor:pointer;
+            font-size:13.5px;
+            text-transform:uppercase;
+            transition:transform 0.15s, box-shadow 0.25s;
+            box-shadow:0 14px 30px -14px rgba(201,169,97,0.55);
+        }
+        .btn-analyze:hover{ transform:translateY(-1px); box-shadow:0 18px 34px -14px rgba(201,169,97,0.7); }
+        .btn-analyze:active{ transform:translateY(1px); }
+        .btn-analyze:focus-visible{ outline:3px solid var(--ink); outline-offset:2px; }
+
+        .btn-analyze::before{
+            content:'';
+            position:absolute; top:0; left:-60%;
+            width:40%; height:100%;
+            background:linear-gradient(120deg, transparent, rgba(255,255,255,0.55), transparent);
+            transform:skewX(-20deg);
+            animation:shimmer 3.2s ease-in-out infinite;
+        }
+        @keyframes shimmer{
+            0%{ left:-60%; }
+            45%{ left:120%; }
+            100%{ left:120%; }
+        }
+
+        .btn-analyze.btn-loading{
+            display:flex; align-items:center; justify-content:center; gap:12px;
+            background:var(--panel-soft);
+            color:var(--ink-soft);
+            box-shadow:none;
+            cursor:default;
+        }
+        .btn-analyze.btn-loading::before{ display:none; }
+
+        .eq{
+            display:flex; align-items:center; gap:3px; height:16px;
+        }
+        .eq span{
+            width:3px; background:var(--gold);
+            border-radius:2px;
+            animation:eqBar 1s ease-in-out infinite;
+        }
+        .eq span:nth-child(1){ height:40%; animation-delay:0s; }
+        .eq span:nth-child(2){ height:100%; animation-delay:0.15s; }
+        .eq span:nth-child(3){ height:65%; animation-delay:0.3s; }
+        .eq span:nth-child(4){ height:85%; animation-delay:0.45s; }
+        .eq span:nth-child(5){ height:50%; animation-delay:0.6s; }
+        @keyframes eqBar{
+            0%,100%{ transform:scaleY(0.4); }
+            50%{ transform:scaleY(1); }
+        }
+
+        .d-none{ display:none !important; }
+
+        /* ---------- Cute sleuth mascot ---------- */
+        .scan-bot{
+            position:absolute;
+            top:-42px;
+            left:0;
+            width:58px;
+            z-index:3;
+            pointer-events:none;
+            filter:drop-shadow(0 8px 14px rgba(0,0,0,0.45));
+        }
+        .scan-bot.scanning{
+            animation:botPatrol 2.6s ease-in-out infinite;
+        }
+        .scan-bot .bot-foot{
+            animation:legBounce 0.45s ease-in-out infinite;
+            transform-origin:center top;
+        }
+        .scan-bot .bot-foot.right{ animation-delay:0.22s; }
+        .scan-bot .bot-curl{
+            animation:curlWiggle 1.2s ease-in-out infinite;
+            transform-origin:36px 10px;
+        }
+        .scan-bot .bot-eyes{
+            animation:eyeBlink 3.2s ease-in-out infinite;
+            transform-origin:center;
+        }
+        .scan-bot .lens-sweep{
+            transform-origin:68px 54px;
+            animation:radarSpin 1.8s linear infinite;
+        }
+        .scan-bot.scanning .bot-paper{
+            transform-origin:36px 39px;
+            animation:paperSpin 3.6s linear infinite;
+        }
+        @keyframes botPatrol{
+            0%{ left:0%; transform:translateX(0) rotate(0deg); }
+            25%{ transform:translateX(0) rotate(-3deg); }
+            50%{ left:100%; transform:translateX(-100%) rotate(0deg); }
+            75%{ transform:translateX(-100%) rotate(3deg); }
+            100%{ left:0%; transform:translateX(0) rotate(0deg); }
+        }
+        @keyframes legBounce{
+            0%,100%{ transform:translateY(0); }
+            50%{ transform:translateY(-3px); }
+        }
+        @keyframes curlWiggle{
+            0%,100%{ transform:rotate(-6deg); }
+            50%{ transform:rotate(6deg); }
+        }
+        @keyframes eyeBlink{
+            0%,88%,100%{ transform:scaleY(1); }
+            92%{ transform:scaleY(0.1); }
+        }
+        @keyframes radarSpin{
+            0%{ transform:rotate(0deg); }
+            100%{ transform:rotate(360deg); }
+        }
+        @keyframes paperSpin{
+            0%{ transform:rotate(0deg) scaleX(1); }
+            25%{ transform:rotate(90deg) scaleX(0.86); }
+            50%{ transform:rotate(180deg) scaleX(1); }
+            75%{ transform:rotate(270deg) scaleX(0.86); }
+            100%{ transform:rotate(360deg) scaleX(1); }
+        }
+
+        /* ---------- Verdict / seal ---------- */
+        .verdict-block{
+            position:relative;
+            overflow:hidden;
+            display:flex;
+            align-items:center;
+            gap:32px;
+            flex-wrap:wrap;
+            border:1px solid var(--line);
+            border-radius:18px;
+            background:linear-gradient(180deg, var(--panel-soft), var(--panel));
+            padding:32px;
+            margin-bottom:34px;
+            box-shadow:0 30px 60px -35px rgba(0,0,0,0.7);
+            animation:riseIn 0.6s cubic-bezier(.2,.8,.2,1) both;
+        }
+
+        .seal{
+            --pct: 0;
+            --tone: var(--verified);
+            position:relative;
+            width:128px; height:128px;
+            border-radius:50%;
+            flex:none;
+            display:grid; place-items:center;
+            background:
+                radial-gradient(circle at 50% 40%, rgba(255,255,255,0.06), transparent 60%),
+                conic-gradient(var(--tone) calc(var(--pct)*1%), rgba(255,255,255,0.06) 0);
+            animation:sealIn 0.55s 0.1s cubic-bezier(.2,1.3,.4,1) both;
+        }
+        .seal::before{
+            content:'';
+            position:absolute; inset:10px;
+            border-radius:50%;
+            background:var(--void-deep);
+            box-shadow:inset 0 0 0 1px rgba(255,255,255,0.05);
+        }
+        .seal::after{
+            content:'';
+            position:absolute; inset:-6px;
+            border-radius:50%;
+            border:1px dashed var(--tone);
+            opacity:0.5;
+            animation:sealRotate 18s linear infinite;
+        }
+        .seal-inner{
+            position:relative; z-index:1;
+            text-align:center;
+        }
+        .seal-inner .pct{
+            font-family:'Fraunces', serif;
+            font-weight:600;
+            font-size:26px;
+            color:var(--ink);
+            line-height:1;
+        }
+        .seal-inner .pct-label{
+            display:block;
+            font-family:'JetBrains Mono', monospace;
+            font-size:9px;
+            letter-spacing:1.5px;
+            color:var(--ink-faint);
+            margin-top:4px;
+            text-transform:uppercase;
+        }
+
+        @keyframes sealIn{
+            0%{ opacity:0; transform:scale(0.6) rotate(-25deg); }
+            100%{ opacity:1; transform:scale(1) rotate(0deg); }
+        }
+        @keyframes sealRotate{
+            0%{ transform:rotate(0deg); }
+            100%{ transform:rotate(360deg); }
+        }
+
+        .verdict-verified{ --tone: var(--verified); }
+        .verdict-flagged{ --tone: var(--flagged); }
+        .verdict-review{ --tone: var(--review); }
+
+        /* verdict mascot: pops in beside the seal, badge matches the verdict */
+        .verdict-bot{
+            flex:none;
+            width:76px;
+            position:relative;
+            animation:botPopIn 0.6s 0.35s cubic-bezier(.2,1.4,.4,1) both;
+            filter:drop-shadow(0 10px 16px rgba(0,0,0,0.45));
+        }
+        .verdict-bot .bot-curl{
+            animation:curlWiggle 1.6s ease-in-out infinite;
+            transform-origin:36px 10px;
+        }
+        .verdict-bot .status-badge{
+            animation:badgePop 0.45s 0.75s cubic-bezier(.2,1.4,.4,1) both;
+            transform-origin:center;
+        }
+        .verdict-bot .icon-check,
+        .verdict-bot .icon-flag,
+        .verdict-bot .icon-review{ opacity:0; }
+        .verdict-verified .verdict-bot .icon-check{ opacity:1; }
+        .verdict-flagged .verdict-bot .icon-flag{ opacity:1; }
+        .verdict-review .verdict-bot .icon-review{ opacity:1; }
+
+        @keyframes badgePop{
+            0%{ opacity:0; transform:scale(0.3); }
+            100%{ opacity:1; transform:scale(1); }
+        }
+
+        @keyframes botPopIn{
+            0%{ opacity:0; transform:scale(0.5) rotate(-14deg) translateY(10px); }
+            70%{ transform:scale(1.06) rotate(4deg) translateY(0); }
+            100%{ opacity:1; transform:scale(1) rotate(0deg) translateY(0); }
+        }
+
+        /* sparkles around the verdict on reveal */
+        .sparkle{
+            position:absolute;
+            color:var(--gold-bright);
+            opacity:0;
+            animation:sparkleTwinkle 1.8s ease-in-out infinite;
+        }
+        .sparkle.s1{ top:8%; left:14%; font-size:14px; animation-delay:0.5s; }
+        .sparkle.s2{ top:66%; left:9%; font-size:10px; animation-delay:1s; }
+        .sparkle.s3{ top:14%; left:26%; font-size:9px; animation-delay:1.4s; }
+        .sparkle.s4{ top:78%; left:22%; font-size:12px; animation-delay:0.85s; }
+        @keyframes sparkleTwinkle{
+            0%,100%{ opacity:0; transform:scale(0.4) rotate(0deg); }
+            50%{ opacity:1; transform:scale(1) rotate(45deg); }
+        }
+
+        .verdict-copy{ flex:1; min-width:200px; }
+        .verdict-copy .label{
+            font-family:'JetBrains Mono', monospace;
+            font-size:11px; letter-spacing:1.8px; text-transform:uppercase;
+            color:var(--ink-faint);
+            display:block; margin-bottom:8px;
+        }
+        .verdict-copy .value{
+            font-family:'Fraunces', serif;
+            font-weight:600;
+            font-size:clamp(24px, 4vw, 32px);
+            letter-spacing:0.3px;
+        }
+        .verdict-verified .value{ color:var(--verified); }
+        .verdict-flagged .value{ color:var(--flagged); }
+        .verdict-review .value{ color:var(--review); }
+
+        /* ---------- Source columns ---------- */
+        .sources-grid{
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:22px;
+        }
+        @media (max-width:680px){
+            .sources-grid{ grid-template-columns:1fr; }
+            .header-inner{ flex-direction:column; align-items:flex-start; }
+            .header-auth{ width:100%; justify-content:flex-end; }
+            .verdict-block{ gap:22px; }
+        }
+
+        .source-box{
+            background:linear-gradient(180deg, var(--panel-soft), var(--panel));
+            border:1px solid var(--line);
+            border-radius:16px;
+            padding:24px;
+            animation:riseIn 0.6s 0.16s cubic-bezier(.2,.8,.2,1) both;
+        }
+        .source-box h5{
+            font-family:'JetBrains Mono', monospace;
+            font-size:12px; letter-spacing:1.4px; text-transform:uppercase;
+            margin:0 0 16px;
+            padding-bottom:14px;
+            border-bottom:1px solid var(--line);
+            color:var(--ink-soft);
+            display:flex; align-items:center; gap:8px;
+        }
+        .source-box h5 i{ color:var(--gold); }
+
+        .source-list{ list-style:none; padding:0; margin:0; }
+        .source-list li{
+            margin-bottom:4px;
+            border-radius:10px;
+            opacity:0;
+            animation:itemIn 0.5s ease forwards;
+        }
+        .source-list li:nth-child(1){ animation-delay:0.05s; }
+        .source-list li:nth-child(2){ animation-delay:0.13s; }
+        .source-list li:nth-child(3){ animation-delay:0.21s; }
+        .source-list li:nth-child(4){ animation-delay:0.29s; }
+        .source-list li:nth-child(5){ animation-delay:0.37s; }
+        @keyframes itemIn{
+            0%{ opacity:0; transform:translateY(8px); }
+            100%{ opacity:1; transform:translateY(0); }
+        }
+
+        .source-list a{
+            text-decoration:none;
+            color:var(--ink);
+            font-weight:600;
+            font-size:14px;
+            line-height:1.4;
+            display:block;
+            padding:12px 14px;
+            border-radius:10px;
+            border:1px solid transparent;
+            transition:border-color 0.2s, background 0.2s, transform 0.15s;
+        }
+        .source-list a:hover{
+            border-color:var(--line-bright);
+            background:rgba(201,169,97,0.06);
+            transform:translateX(3px);
+        }
+        .source-url-text{
+            font-family:'JetBrains Mono', monospace;
+            font-size:10.5px;
+            color:var(--ink-faint);
+            margin-top:4px;
+        }
+
+        .empty-state{
+            text-align:center;
+            color:var(--ink-faint);
+            padding:22px 0;
+        }
+        .empty-state i{ font-size:20px; opacity:0.5; margin-bottom:10px; display:block; }
+        .empty-state p{ font-family:'JetBrains Mono', monospace; font-size:11.5px; margin:0; }
+
+        @keyframes riseIn{
+            0%{ opacity:0; transform:translateY(14px); }
+            100%{ opacity:1; transform:translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="header-inner">
+            <a href="/" class="header-brand">
+                <span class="brand-mark"><span><i class="fa-solid fa-magnifying-glass"></i></span></span>
+                <span class="brand-word">Truth<em>Lens</em></span>
+            </a>
+
+            <div class="header-auth">
+                <span class="header-tag mono"><i class="fa-solid fa-shield-halved"></i>Verification Lab · v2</span>
+
+                {% if user.is_authenticated %}
+                    <span class="header-tag mono user-chip">
+                        <i class="fa-solid fa-user"></i>{{ user.username }}
+                    </span>
+                    <a href="{% url 'history' %}" class="header-tag mono btn-history">
+                        <i class="fa-solid fa-clock-rotate-left"></i>History
+                    </a>
+                    <form action="{% url 'logout' %}" method="post" class="logout-form">
+                        {% csrf_token %}
+                        <button type="submit" class="header-tag mono btn-logout">
+                            <i class="fa-solid fa-arrow-right-from-bracket"></i>Logout
+                        </button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}" class="header-tag mono btn-login">
+                        <i class="fa-solid fa-right-to-bracket"></i>Login
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <div class="wrap">
+
+        <div class="intro">
+            <span class="intro-eyebrow">Case intake</span>
+            <h1>Read the fingerprint before you share it.</h1>
+            <p>
+                Paste an article, tweet, or forwarded message below. The model reads its
+                linguistic fingerprint and cross-checks it against Wikipedia and live
+                news coverage — then seals a verdict.
+            </p>
+        </div>
+
+        <!-- Intake -->
+        <div class="dossier-card">
+            <span class="card-label"><span class="dot"></span>Exhibit A — submitted text</span>
+
+            <form method="POST" id="analysisForm" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="scan-field">
+                    <div class="scan-bot d-none" id="scanBot" aria-hidden="true">
+                        <svg viewBox="0 0 84 84" width="58" height="58" fill="none">
+                            <!-- feet -->
+                            <ellipse class="bot-foot left" cx="27" cy="76" rx="5.5" ry="3.2" fill="#a9863f"/>
+                            <ellipse class="bot-foot right" cx="45" cy="76" rx="5.5" ry="3.2" fill="#a9863f"/>
+
+                            <!-- body: spinning newspaper -->
+                            <g class="bot-paper">
+                                <rect x="14" y="12" width="44" height="54" rx="2" fill="#f5efe0" stroke="#c9a961" stroke-width="1.8"/>
+                                <path d="M50 12 L58 12 L58 20 Z" fill="#e2d9bd" stroke="#c9a961" stroke-width="1.2"/>
+                                <rect x="19" y="18" width="34" height="6" rx="1" fill="#c9a961"/>
+                                <rect x="19" y="29" width="34" height="2.4" fill="#b8ac8e"/>
+                                <rect x="19" y="35" width="26" height="2.4" fill="#b8ac8e"/>
+                                <rect x="19" y="41" width="34" height="2.4" fill="#b8ac8e"/>
+                                <rect x="19" y="47" width="20" height="2.4" fill="#b8ac8e"/>
+                                <rect x="19" y="53" width="30" height="2.4" fill="#b8ac8e"/>
+                                <rect x="19" y="59" width="24" height="2.4" fill="#b8ac8e"/>
+                            </g>
+
+                            <!-- hair curl -->
+                            <path class="bot-curl" d="M33 8 C33 1 41 1 39 8" stroke="#c9a961" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+                            <!-- left arm -->
+                            <ellipse cx="11" cy="46" rx="6" ry="4" fill="#e8c988" stroke="#c9a961" stroke-width="1.4" transform="rotate(18 11 46)"/>
+                            <!-- eyes -->
+                            <g class="bot-eyes">
+                                <ellipse cx="28" cy="40" rx="6.4" ry="7.4" fill="#fdfbf4"/>
+                                <ellipse cx="44" cy="40" rx="6.4" ry="7.4" fill="#fdfbf4"/>
+                                <circle cx="29.5" cy="41.5" r="3" fill="#1c1712"/>
+                                <circle cx="45.5" cy="41.5" r="3" fill="#1c1712"/>
+                                <circle cx="27.5" cy="39" r="1.1" fill="#ffffff"/>
+                                <circle cx="43.5" cy="39" r="1.1" fill="#ffffff"/>
+                            </g>
+                            <!-- blush -->
+                            <ellipse cx="20" cy="52" rx="3.4" ry="2" fill="#ff8fa3" opacity="0.55"/>
+                            <ellipse cx="52" cy="52" rx="3.4" ry="2" fill="#ff8fa3" opacity="0.55"/>
+                            <!-- smile -->
+                            <path d="M29 58 Q36 62.5 43 58" stroke="#7a5c22" stroke-width="2" fill="none" stroke-linecap="round"/>
+                            <!-- magnifying glass arm -->
+                            <line x1="58" y1="46" x2="66" y2="53" stroke="#c9a961" stroke-width="3.4" stroke-linecap="round"/>
+                            <circle cx="68" cy="54" r="8" fill="#3ddc97" opacity="0.22" stroke="#e8c988" stroke-width="2"/>
+                            <line class="lens-sweep" x1="68" y1="54" x2="68" y2="47" stroke="#3ddc97" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <textarea
+                        name="news_text"
+                        rows="6"
+                        placeholder="Paste the content here to begin analysis…">{{ news_text }}</textarea>
+                </div>
+
+                <div class="or-divider"><span>OR</span></div>
+
+                <div class="upload-field">
+                    <label class="upload-label">
+                        <i class="fa-solid fa-file-arrow-up"></i>Exhibit B — upload document (PDF, TXT, DOCX)
+                    </label>
+                    <input type="file" name="news_document" accept=".txt,.pdf,.docx">
+                </div>
+
+                <button type="submit" class="btn-analyze" id="submitBtn">
+                    <i class="fa-solid fa-stamp"></i>&nbsp; Run analysis
+                </button>
+
+                <button class="btn-analyze btn-loading d-none" id="loadingBtn" type="button" disabled>
+                    <span class="eq"><span></span><span></span><span></span><span></span><span></span></span>
+                    <span>Cross-referencing sources…</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Results -->
+        {% if result %}
+        <div id="resultSection">
+
+            <div class="verdict-block verdict-{% if color == 'green' %}verified{% elif color == 'red' %}flagged{% else %}review{% endif %}">
+                <span class="sparkle s1"><i class="fa-solid fa-sparkle"></i></span>
+                <span class="sparkle s2"><i class="fa-solid fa-sparkle"></i></span>
+                <span class="sparkle s3"><i class="fa-solid fa-sparkle"></i></span>
+                <span class="sparkle s4"><i class="fa-solid fa-sparkle"></i></span>
+
+                <div class="verdict-bot" aria-hidden="true">
+                    <svg viewBox="0 0 84 88" width="76" height="80" fill="none">
+                        <!-- feet -->
+                        <ellipse cx="27" cy="80" rx="5.5" ry="3.2" fill="#a9863f"/>
+                        <ellipse cx="45" cy="80" rx="5.5" ry="3.2" fill="#a9863f"/>
+
+                        <!-- body: newspaper, settled (not spinning) -->
+                        <g>
+                            <rect x="14" y="14" width="44" height="54" rx="2" fill="#f5efe0" stroke="#c9a961" stroke-width="1.8"/>
+                            <path d="M50 14 L58 14 L58 22 Z" fill="#e2d9bd" stroke="#c9a961" stroke-width="1.2"/>
+                            <rect x="19" y="20" width="34" height="6" rx="1" fill="#c9a961"/>
+                            <rect x="19" y="31" width="34" height="2.4" fill="#b8ac8e"/>
+                            <rect x="19" y="37" width="26" height="2.4" fill="#b8ac8e"/>
+                            <rect x="19" y="43" width="34" height="2.4" fill="#b8ac8e"/>
+                            <rect x="19" y="49" width="20" height="2.4" fill="#b8ac8e"/>
+                            <!-- wax-seal stamp, tinted to the verdict -->
+                            <circle cx="42" cy="58" r="7" fill="var(--tone)" opacity="0.9"/>
+                            <circle cx="42" cy="58" r="7" fill="none" stroke="#f5efe0" stroke-width="1"/>
+                        </g>
+
+                        <!-- hair curl -->
+                        <path class="bot-curl" d="M33 10 C33 3 41 3 39 10" stroke="#c9a961" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+                        <!-- arms relaxed -->
+                        <ellipse cx="11" cy="48" rx="6" ry="4" fill="#e8c988" stroke="#c9a961" stroke-width="1.4" transform="rotate(-10 11 48)"/>
+                        <ellipse cx="61" cy="48" rx="6" ry="4" fill="#e8c988" stroke="#c9a961" stroke-width="1.4" transform="rotate(10 61 48)"/>
+                        <!-- eyes -->
+                        <ellipse cx="28" cy="42" rx="6.4" ry="7.4" fill="#fdfbf4"/>
+                        <ellipse cx="44" cy="42" rx="6.4" ry="7.4" fill="#fdfbf4"/>
+                        <circle cx="29.5" cy="43.5" r="3" fill="#1c1712"/>
+                        <circle cx="45.5" cy="43.5" r="3" fill="#1c1712"/>
+                        <circle cx="27.5" cy="41" r="1.1" fill="#ffffff"/>
+                        <circle cx="43.5" cy="41" r="1.1" fill="#ffffff"/>
+                        <!-- blush -->
+                        <ellipse cx="20" cy="54" rx="3.4" ry="2" fill="#ff8fa3" opacity="0.55"/>
+                        <ellipse cx="52" cy="54" rx="3.4" ry="2" fill="#ff8fa3" opacity="0.55"/>
+                        <!-- smile -->
+                        <path d="M29 60 Q36 64.5 43 60" stroke="#7a5c22" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+                        <!-- status badge, icon swaps per verdict -->
+                        <g class="status-badge">
+                            <circle cx="64" cy="18" r="13" fill="#071009" stroke="var(--tone)" stroke-width="2.4"/>
+                            <path class="icon-check" d="M58 18 L62.5 22.5 L70.5 12.5" stroke="var(--tone)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path class="icon-flag" d="M59 12 L69 24 M69 12 L59 24" stroke="var(--tone)" stroke-width="3" stroke-linecap="round"/>
+                            <path class="icon-review" d="M64 11 L64 20" stroke="var(--tone)" stroke-width="3" stroke-linecap="round"/>
+                            <circle class="icon-review" cx="64" cy="25" r="1.9" fill="var(--tone)"/>
+                        </g>
+                    </svg>
+                </div>
+
+                <div class="seal" style="--pct: {{ confidence }};">
+                    <div class="seal-inner">
+                        <span class="pct mono">{{ confidence }}%</span>
+                        <span class="pct-label">confidence</span>
+                    </div>
+                </div>
+                <div class="verdict-copy">
+                    <span class="label">Verdict</span>
+                    <span class="value">{{ result }}</span>
+                </div>
+            </div>
+
+            <div class="sources-grid">
+
+                <div class="source-box">
+                    <h5><i class="fa-solid fa-book-bookmark"></i>Verified entities · Wikipedia</h5>
+
+                    {% if trusted_links %}
+                    <ul class="source-list">
+                        {% for item in trusted_links %}
+                        <li>
+                            <a href="{{ item.link }}" target="_blank">
+                                {{ item.title }}
+                                <div class="source-url-text">{{ item.link|truncatechars:45 }}</div>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fa-solid fa-folder-open"></i>
+                        <p>No verified Wikipedia entities found.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="source-box">
+                    <h5><i class="fa-solid fa-rss"></i>Live news coverage</h5>
+
+                    {% if general_links %}
+                    <ul class="source-list">
+                        {% for item in general_links %}
+                        <li>
+                            <a href="{{ item.link }}" target="_blank">
+                                {{ item.title }}
+                                <div class="source-url-text">{{ item.link|truncatechars:45 }}</div>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fa-regular fa-newspaper"></i>
+                        <p>No recent coverage found on news networks.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <script>
+        document.getElementById('analysisForm').addEventListener('submit', function () {
+            document.getElementById('submitBtn').classList.add('d-none');
+            document.getElementById('loadingBtn').classList.remove('d-none');
+
+            var bot = document.getElementById('scanBot');
+            bot.classList.remove('d-none');
+            // tiny delay so the "scanning" animation kicks in smoothly after it appears
+            requestAnimationFrame(function () { bot.classList.add('scanning'); });
+        });
+    </script>
+
+</body>
+</html>
